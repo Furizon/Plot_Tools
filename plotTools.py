@@ -210,7 +210,7 @@ def plotElectronDistribution(DSFdata):
     plt.xlim(x_ticks[0] - 5, x_ticks[-1] + 5)
     plt.ylim(0.002, 0.015)
     plt.xlabel("Sites", fontsize=40)
-    ax.set_ylabel(r'$n_{i}$', labelpad=20, rotation=0, fontsize=40)
+    ax.set_ylabel(r'$\rho$', labelpad=20, rotation=0, fontsize=40)
     ax.spines['top'].set_color('black')    # 设置顶部边框线颜色为灰色
     ax.spines['right'].set_color('black')  # 设置右侧边框线颜色为灰色
     ax.spines['bottom'].set_color('black') # 设置底部边框线颜色为黑色
@@ -474,15 +474,16 @@ if __name__ == "__main__":
     plt.rc('font',family='Times New Roman')
     matplotlib.rcParams['font.family'] = 'Times New Roman'
     matplotlib.rcParams['mathtext.default'] = 'regular'
-    # Path = 'D:\ProgramData\DeviceStudioProject\AgElectrodeCarbonChain\AgElectrodeCarbonChain\Ag_11C_Ag_h128_c200_Relaxed\Device\\'
-    # Path = 'D:\ProgramData\DeviceStudioProject\CarbonChainReplace\CarbonChainReplace\Ag_O_8C_O_Ag_h128_c200_Relaxed\Device\\'
-    Path = 'D:\ProgramData\DeviceStudioProject\AgElectrodeCarbonChain\AgElectrodeCarbonChain\Ag_11C_Ag_h128_c100_Relaxed\Device\\'
-    DSFdata = readDSFfile(Path + "TotalElectronDensity.dsf")
-    # plotIsosurfaceSpinPolarization(DSFdata, iso_value = 0.01)
-    # plotElectronDistribution(DSFdata)
-    plotTransmission(Path + 'Transmission.xml')
     
-    # Bias, Polarizations, Transmissions = plotSpinSpiltingBias('C:\\Users\Admin\Downloads\data2')
+    # Path = 'D:\ProgramData\DeviceStudioProject\AgElectrodeCarbonChain\AgElectrodeCarbonChain\Ag_11C_Ag_h128_c200_Relaxed\Device\\'
+    Path = 'D:\ProgramData\DeviceStudioProject\AgElectrodeCarbonChain\AgElectrodeCarbonChain\Ag_11C_Ag_h128_c200_Relaxed\Device\\'
+    # Path = 'D:\ProgramData\DeviceStudioProject\AgElectrodeCarbonChain\AgElectrodeCarbonChain\Ag_11C_Ag_h128_c100_Relaxed\Device\\'
+    DSFdata = readDSFfile(Path + "EffectivePotential.dsf")
+    # plotIsosurfaceSpinPolarization(DSFdata, iso_value = 0.01)
+    plotElectronDistribution(DSFdata)
+    # plotTransmission(Path + 'Transmission.xml')
+    
+    # Bias, Polarizations, Transmissions = plotSpinSpiltingBias('D:\ProgramData\DeviceStudioProject\data')
     # plt.figure(figsize=(8, 6))
     # ax = plt.axes(polar=False)
     # ax.plot(Bias, Polarizations, color='black', marker='+'
@@ -496,7 +497,8 @@ if __name__ == "__main__":
     # ax.spines['bottom'].set_color('black') # 设置底部边框线颜色为黑色
     # ax.spines['left'].set_color('black')  # 设置左侧边框线颜色为黑色
     # ax.tick_params( length=4, width=1, colors='black', labelsize=22)
-    # ax.set_ylim(-1.0, 1.0)
+    # ax.set_yticks(np.linspace(-1, 1, 5))
+    # ax.set_ylim(-1.1, 1.2)
     # ax2 = ax.twinx()
     # ax2.set_ylabel('Transmission', labelpad=15, rotation=90, fontsize=26, color='#c94737', )
     # # 设置 y 轴的显示格式
@@ -508,7 +510,8 @@ if __name__ == "__main__":
     # ax2.plot(Bias, Transmissions, color='#c94737', marker='+'
     #      ,markeredgecolor='#c94737',markersize='10',markeredgewidth=1)
     # ax2.tick_params(length=4, width=1, colors='#c94737', labelsize=22)
-    # ax2.set_ylim(-0.0005, 0.015)
+    # ax2.set_yticks(np.linspace(0, 2, 5))
+    # ax2.set_ylim(-0.1, 2.2)
     
     # plt.tight_layout()
     # plt.show()
