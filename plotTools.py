@@ -13,12 +13,11 @@ HATREE = 27.2114
 def readDSFfile(FilePath):
     Data = {}
     try:
-        FileHandler = open(FilePath, "r")
-        ListOfLines = FileHandler.readlines()
+        with open(FilePath, "r") as FileHandler:
+            ListOfLines = FileHandler.readlines()
     except Exception as e:
-        print("Error occured while reading files %s" % (e))
-    finally:
-        FileHandler.close()
+        print(f"Error occurred while reading file: {e}")
+        return None
 
     # 电极信息
     NumOfLeads = int(ListOfLines[1])
@@ -37,20 +36,19 @@ def readDSFfile(FilePath):
     for i in range(13, 13 + NumOfAtoms):
         tup = (
             ListOfLines[i].split()[0],
-            np.array([eval(j) for j in ListOfLines[i].split()[1:]]),
+            np.array([float(j) for j in ListOfLines[i].split()[1:]]),
         )
         AtomPositions.append(tup)
 
     # 读取空间采样点数量 K点
     KPoints = [int(i) for i in ListOfLines[13 + NumOfAtoms].split()]
+
     # 读取电荷密度
-    ElectronDensity = []
-    for i in tqdm(ListOfLines[14 + NumOfAtoms :]):
-        for j in i.split():
-            ElectronDensity.append(eval(j))
-    ElectronDensity = np.array(ElectronDensity)
-    ElectronDensity = np.array(ElectronDensity).reshape(
-        (KPoints[0], KPoints[1], KPoints[2], 2), order="F"
+    density_lines = ListOfLines[14 + NumOfAtoms:]  # 提取电荷密度部分
+    density_data = " ".join(density_lines)  # 将所有电荷密度行合并为一个字符串
+    ElectronDensity = np.fromstring(density_data, sep=" ", dtype=float)  # 转换为NumPy数组
+    ElectronDensity = ElectronDensity.reshape(
+        (KPoints[0], KPoints[1], KPoints[2], KPoints[3]), order="F"
     )
 
     Data["NumOfLeads"] = NumOfLeads
@@ -113,7 +111,10 @@ def plotTransmission(Path):
     ax.tick_params(which='both', direction='in', length=4, width=1, colors='black')
     plt.legend(loc='upper right', fontsize=30, framealpha=0)
     plt.tight_layout()
-    plt.show()
+    folder_name = os.path.basename(os.path.dirname(Path))
+    print(folder_name)
+    plt.savefig(os.path.join('figs', f'{folder_name}.png'))
+    # plt.show()
 
 def calSpinSpilting(data):
     TransmissionCoefficients = np.fromstring(
@@ -130,7 +131,6 @@ def calSpinSpilting(data):
     SpinSpilting = (TransmissionCoefficientsSpinUp[201] - TransmissionCoefficientsSpinDown[201]) / (TransmissionCoefficientsSpinUp[201] + TransmissionCoefficientsSpinDown[201])
     Transmission = TransmissionCoefficientsSpinUp[201]
     return SpinSpilting, Transmission
-
 def readDFTBLocalCurrentFiles(FilePath):
     
     # 存储原子坐标
@@ -469,19 +469,64 @@ def plotIsosurfaceSpinPolarization(DSFdata, iso_value):
     # 显示图表
     fig.show()
 
+def plotPotential(DSFdata):
+    x_ticks = []
+    NonAgAtomNum = 0
+    for atom in DSFdata['AtomPositions']:
+        if atom[0] != 'Ag':
+            x_ticks.append((int)(atom[1][2] / DSFdata['UnicellVectors'][2][2] * DSFdata['KPoints'][2]))
+            NonAgAtomNum += 1
+    x_ticks = np.sort(x_ticks)
+    x_labels = np.arange(1, NonAgAtomNum + 1, dtype=int)
+    SpinUpDensitySumOverXY = DSFdata["ElectronDensity"][DSFdata['KPoints'][0] // 2, DSFdata['KPoints'][1] // 2, :, 0]
+    # SpinDownDensitySumOverXY = DSFdata["ElectronDensity"][DSFdata['KPoints'][0] // 2, DSFdata['KPoints'][1] // 2, :, 1]
+    plt.figure(figsize=(8, 6))
+    ax = plt.axes(polar=False)
+    # 设置 y 轴的显示格式
+    formatter = ScalarFormatter(useMathText=True)
+    formatter.set_scientific(True) 
+    formatter.set_powerlimits((0, 0))
+    ax.yaxis.get_offset_text().set_size(22)
+    ax.yaxis.set_major_formatter(formatter)
+    ax.plot(range(SpinUpDensitySumOverXY.shape[0]), SpinUpDensitySumOverXY, color="black", linestyle='-', linewidth=2, label="Spin Up")
+    # ax.plot(range(SpinDownDensitySumOverXY.shape[0]), SpinDownDensitySumOverXY, color="#3333cc", linestyle='--', linewidth=2, label="Spin Down")
+    ax.patch.set_alpha(0.0)   # 轴区域的背景
+    
+    
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.xticks(x_ticks, x_labels, fontsize=22)
+    # plt.yticks(fontsize=22)
+    
+    plt.xlim(x_ticks[0] - 50, x_ticks[-1] + 50)
+    # plt.ylim(0.002, 0.015)
+    plt.xlabel("Sites", fontsize=40)
+    ax.set_ylabel('Potential', labelpad=20, rotation=90, fontsize=40)
+    ax.spines['top'].set_color('black')    # 设置顶部边框线颜色为灰色
+    ax.spines['right'].set_color('black')  # 设置右侧边框线颜色为灰色
+    ax.spines['bottom'].set_color('black') # 设置底部边框线颜色为黑色
+    ax.spines['left'].set_color('black')  # 设置左侧边框线颜色为黑色
+    ax.tick_params(which='both', direction='in', length=4, width=1, colors='black')
+    # plt.legend(loc='best', fontsize=30, framealpha=0)
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == "__main__":
     plt.rc('font',family='Times New Roman')
     matplotlib.rcParams['font.family'] = 'Times New Roman'
     matplotlib.rcParams['mathtext.default'] = 'regular'
     
-    # Path = 'D:\ProgramData\DeviceStudioProject\AgElectrodeCarbonChain\AgElectrodeCarbonChain\Ag_11C_Ag_h128_c200_Relaxed\Device\\'
-    Path = 'D:\ProgramData\DeviceStudioProject\AgElectrodeCarbonChain\AgElectrodeCarbonChain\Ag_11C_Ag_h128_c200_Relaxed\Device\\'
-    # Path = 'D:\ProgramData\DeviceStudioProject\AgElectrodeCarbonChain\AgElectrodeCarbonChain\Ag_11C_Ag_h128_c100_Relaxed\Device\\'
-    DSFdata = readDSFfile(Path + "EffectivePotential.dsf")
+    RootPath = 'D:\ProgramData\DeviceStudioProject\data\\'
+    # DSFdata = readDSFfile(Path + "CoulombPotential.dsf")
     # plotIsosurfaceSpinPolarization(DSFdata, iso_value = 0.01)
-    plotElectronDistribution(DSFdata)
-    # plotTransmission(Path + 'Transmission.xml')
+    # plotPotential(DSFdata)
+    # plotPolarization(DSFdata)
+    # plotElectronDistribution(DSFdata)
+    Files = os.listdir(RootPath)
+    for File in Files:
+        if os.path.isdir(RootPath + File):
+            Path = RootPath + File + "\Transmission.xml"
+            if os.path.isfile(Path):
+                plotTransmission(Path)
     
     # Bias, Polarizations, Transmissions = plotSpinSpiltingBias('D:\ProgramData\DeviceStudioProject\data')
     # plt.figure(figsize=(8, 6))
